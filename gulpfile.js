@@ -31,7 +31,7 @@ gulp.task('compLess',function(done){
     done();
 });
 
-gulp.task('compJs',function(done){
+gulp.task('compJs',function(){
   gulp.src(jsFile)
     .pipe(concat('bui-components.js'))
     .pipe(gulp.dest(jsOutFile))
@@ -39,7 +39,6 @@ gulp.task('compJs',function(done){
     .pipe(uglify())
     .pipe(gulp.dest(jsOutFile))
     .pipe(notify({ message: 'js编译完成' }));
-    done();
 });
 
 gulp.task('examplesLess',function(done){
@@ -74,10 +73,10 @@ gulp.task('html', function(){
 
 
 gulp.task('watch', function(){
-  gulp.watch('bin/less/*.less', gulp.series('compLess', 'html'));
-	gulp.watch('bin/components/*.js', gulp.series('compJs', 'html'));
-	gulp.watch('examples/less/*.less', gulp.series('examplesLess', 'html'));
-  gulp.watch(['*.html','**/*.js'],gulp.series('html'));
+  watch('bin/less/*.less', gulp.series('compLess', 'html'));
+	watch('bin/**/*.js', gulp.series('compJs', 'html'));
+	watch('examples/less/*.less', gulp.series('examplesLess', 'html'));
+  watch(['*.html','**/*.js'],gulp.series('html'));
 });
 //全局监测less及html变化实时刷新
 

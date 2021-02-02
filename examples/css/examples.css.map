@@ -1,0 +1,1 @@
+{"version":3,"sources":["examples.less","examples.css"],"names":[],"mappings":"AAEA;EACE,iBAAA;ACDF","file":"examples.css","sourcesContent":["@import 'assets/bootstrap-3.3.7/less/variables.less';\n\n.wrap{\n  min-width: 1000px;\n}",".wrap {\n  min-width: 1000px;\n}\n"]}

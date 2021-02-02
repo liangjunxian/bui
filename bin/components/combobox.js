@@ -1,5 +1,5 @@
-$.extend = {
-  combobox: function(){ 
-    alert('sdfsdf');
-  }
-}
+;(function($){
+  $.fn.combobox = function() {
+    var self = $(this);
+  };
+})(jQuery);
