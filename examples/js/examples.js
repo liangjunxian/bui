@@ -2,6 +2,9 @@ $(window).ready(function(){
   $('.js-combox1').combobox({
     value: ['1','1-1'],
     multiselect: true,
+    onChange: function(val) {
+      console.log(val)
+    },
     options: [
       {
         value: '1',

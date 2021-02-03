@@ -23,6 +23,7 @@
     display: inline-block;
     border: 1px solid @btn-default-border;
     padding: 0 @padding-small-horizontal;
+    padding-right: @padding-xs-horizontal;
     font-size: @font-size-small;
     height: 20px;
     line-height: 20px;
@@ -34,6 +35,18 @@
   }
   &.focus{
     border-color: @input-border-focus;
+  }
+  &.disabled{
+    cursor: not-allowed;
+    background: @input-bg-disabled;
+  }
+  .bui_combobox_tag_remove{
+    font-size: @font-size-small;
+    font-weight: normal;
+    margin-left: @padding-xs-horizontal;
+    &:hover{
+      color: @brand-danger;
+    }
   }
 }
 

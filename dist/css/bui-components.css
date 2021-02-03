@@ -22,6 +22,7 @@
   display: inline-block;
   border: 1px solid #ccc;
   padding: 0 10px;
+  padding-right: 5px;
   font-size: 12px;
   height: 20px;
   line-height: 20px;
@@ -33,6 +34,18 @@
 }
 .bui_combobox.focus {
   border-color: #66afe9;
+}
+.bui_combobox.disabled {
+  cursor: not-allowed;
+  background: #eeeeee;
+}
+.bui_combobox .bui_combobox_tag_remove {
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 5px;
+}
+.bui_combobox .bui_combobox_tag_remove:hover {
+  color: #d9534f;
 }
 .bui_combobox_popover {
   position: absolute;

@@ -30,7 +30,7 @@
       $.each(items, function(i, item) {
         var curr = $.inArray(item.value, values) !== -1 ? 'active' : '';
         if(item.children instanceof Array && item.children.length > 0) {
-          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node '+ curr +'"><span class="bui_combobox_switch"><span class="glyphicon glyphicon-triangle-bottom"></span></span>'+ item.name +'</div><ul class="bui_combobox_ul">'+ _render_items(item.children) +'</ul></li>'
+          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node '+ curr +'"><span class="bui_combobox_switch"><span class="glyphicon glyphicon-triangle-bottom"></span></span>'+ item.name +'</div><ul class="bui_combobox_ul">'+ _render_items(item.children, values) +'</ul></li>'
         } else {
           nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node '+ curr +'"><span class="bui_combobox_empty"></span>'+ item.name +'</div></li>'
         }
@@ -77,7 +77,7 @@
     if(selecteds instanceof Array && selecteds.length > 0) {
       if (typeof opt.multiselect === 'boolean' && opt.multiselect) {
         results = $.map(selecteds, function(item){
-          return '<span class="bui_combobox_tag">'+ item.name +'</span>'
+          return '<span class="bui_combobox_tag" data_value="'+ item.value +'">'+ item.name +'<span class="glyphicon glyphicon-remove bui_combobox_tag_remove"></span></span>'
         }).join('');
       } else {
         results = selecteds[0].name;
@@ -110,13 +110,13 @@
   }
   // 初始化多选框
 
-  function _init_popover(self, results, opt) {
+  function _init_popover(self, values, opt) {
     $('.bui_combobox_popover').remove();
     var attr = _get_position(self);
     var leftStyle = attr.left > attr.winWidth/2 ? 'right: '+(attr.winWidth-attr.left-attr.width)+'px; ' : 'left: '+attr.left+'px; ';
     var topStyle = attr.top > attr.winHeight / 2 ? 'bottom: '+ (attr.winHeight-attr.top)+'px; ' : 'top: '+(attr.top+attr.height)+'px; ';
     var styles = leftStyle + topStyle;
-    var items = _render_items(opt.options, results);
+    var items = _render_items(opt.options, values);
     $('body').append('<div class="bui_combobox_popover" style="'+styles+'width: '+attr.width+'px;" >'+ items +'</div>');
     $(document).bind('click', _delete_combobox);
     return $('.bui_combobox_popover');
@@ -141,12 +141,40 @@
 
     if(self.attr('disabled') || opt.disabled) {
       self.find('input').attr('disabled', true);
+      self.addClass('disabled');
       return;
     }
 
+    self.on('click', '.bui_combobox_tag_remove', function(ev){
+      ev.stopPropagation();
+      var tag = $(this).parent('.bui_combobox_tag');
+      var val = tag.attr('data_value');
+      var resIndex = $.inArray(val, results);
+      var inputText = self.find('.bui_combobox_value');
+      var input = self.find('input');
+      var item = $('.bui_combobox_popover').find('[data_value='+ val +']');
+      item.find('.bui_combobox_node').eq(0).removeClass('active');
+      results.splice(resIndex, 1);
+      tag.remove();
+      if(results.length === 0){
+        inputText.addClass('placeholder');
+        inputText.text(opt.placeholder);
+      }
+      input.attr('value', results.join(','));
+      if(opt.onChange instanceof Function){
+        opt.onChange(_get_selecteds(results, opt.options));
+      }
+    });
+    // 删除标签
+
     self.on('click', function(event) {
       event.stopPropagation();
-      var popover = _init_popover(self, results, opt);
+      var nowValues = $(this).find('input').val().split(',');
+      var popover = _init_popover(self, nowValues, opt);
+      if(opt.onChange instanceof Function){
+        opt.onChange(_get_selecteds(nowValues, opt.options));
+      }
+
       popover.on('click', '.bui_combobox_switch', function(ev){
         ev.stopPropagation();  
         $(this).toggleClass('curr');
@@ -164,14 +192,16 @@
         var itemValue = $(this).attr('data_value');
         var itemName = $(this).attr('data_name');
         var inputText = self.find('.bui_combobox_value');
+        var input = self.find('input');
         if (typeof opt.multiselect === 'boolean' && opt.multiselect) {
           var resIndex = $.inArray(itemValue, results);
           if(resIndex === -1) {
             if(results.length === 0){
               inputText.removeClass('placeholder');
+              inputText.html('');
             }
             results.push(itemValue);
-            inputText.append('<span class="bui_combobox_tag">'+ itemName +'</span>');
+            inputText.append('<span class="bui_combobox_tag" data_value="'+ itemValue +'">'+ itemName +'<span class="glyphicon glyphicon-remove bui_combobox_tag_remove"></span></span>');
             $(this).find('.bui_combobox_node').eq(0).addClass('active');
           } else {
             results.splice(resIndex, 1);
@@ -196,7 +226,12 @@
           $(this).find('.bui_combobox_node').eq(0).addClass('active');
           $(this).siblings().find('.bui_combobox_node').eq(0).removeClass('active');
         }
+        input.attr('value', results.join(','));
+        if(opt.onChange instanceof Function){
+          opt.onChange(_get_selecteds(results, opt.options));
+        }
       });
+
     });
   };
 })(jQuery);
