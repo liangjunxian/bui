@@ -1,4 +1,43 @@
 .bui_combobox{
+  width: 100%;
+  display: inline-block;
+  height: @input-height-base;
+  line-height: @line-height-base;
+  border-radius: @border-radius-base;
+  border: 1px solid @input-border;
+  position: relative;
+  color: @text-color;
+  font-size: @font-size-base;
+  padding: @padding-base-vertical @padding-base-horizontal;
+  cursor: pointer;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  .bui_combobox_value {
+    &.placeholder{
+      color: @input-color-placeholder;
+    }
+  }
+  .bui_combobox_tag{
+    border-radius: @border-radius-base;
+    display: inline-block;
+    border: 1px solid @btn-default-border;
+    padding: 0 @padding-small-horizontal;
+    font-size: @font-size-small;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    margin-right: @padding-xs-horizontal;
+    &:last-child{
+      margin-right: 0;
+    }
+  }
+  &.focus{
+    border-color: @input-border-focus;
+  }
+}
+
+.bui_combobox_popover{
   position: absolute;
   z-index: @zindex-popover;
   background: @dropdown-bg;

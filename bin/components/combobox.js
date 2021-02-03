@@ -11,27 +11,28 @@
   }
   // 获取元素坐标
 
-  function deleteCombobox(event){
+  function _delete_combobox(event){
     var node = event.target;
     while (node) { //循环判断至跟节点，防止点击的是div子元素 
-      if (node.className == 'bui_combobox' || node.className == 'combobox_node') {      
+      if (node.className == 'bui_combobox_popover' || node.className == 'bui_combobox_node') {      
         return;
       }
       node = node.parentNode;
     }
-    $('.bui_combobox').remove();
-    $(document).unbind('click', deleteCombobox);
+    $('.bui_combobox_popover').remove();
+    $(document).unbind('click', _delete_combobox);
   };
   // 点击元素外删除元素
 
-  function renderItems(items) {
+  function _render_items(items, values) {
     var nodes = '';
     if(items instanceof Array && items.length > 0){
       $.each(items, function(i, item) {
+        var curr = $.inArray(item.value, values) !== -1 ? 'active' : '';
         if(item.children instanceof Array && item.children.length > 0) {
-          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node"><span class="bui_combobox_switch"><span class="glyphicon glyphicon-triangle-right"></span></span>'+ item.name +'</div><ul class="bui_combobox_ul">'+ renderItems(item.children) +'</ul></li>'
+          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node '+ curr +'"><span class="bui_combobox_switch"><span class="glyphicon glyphicon-triangle-bottom"></span></span>'+ item.name +'</div><ul class="bui_combobox_ul">'+ _render_items(item.children) +'</ul></li>'
         } else {
-          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node"><span class="bui_combobox_empty"></span>'+ item.name +'</div></li>'
+          nodes += '<li class="bui_combobox_item" data_value="'+ item.value +'" data_name="'+ item.name +'"><div class="bui_combobox_node '+ curr +'"><span class="bui_combobox_empty"></span>'+ item.name +'</div></li>'
         }
       });
     }
@@ -39,11 +40,94 @@
   };
   // 渲染选项
 
+  function _get_selecteds(values, options) {
+    var results = [];
+    var options = _format_options(options);
+    $.each(options, function(i, item) {
+      if($.inArray(item.value, values) !== -1){
+        results.unshift(item);
+      }
+    });
+    return results;
+  }
+  // 获取已选对象
+
+  function _format_options(options) {
+    var results = [];
+    function loopTree (arr, group) {
+      if(arr instanceof Array && arr.length > 0){
+        $.each(arr, function(i, item) {
+          if(item.children instanceof Array && item.children.length > 0) {
+            loopTree(item.children, group);
+          }
+          group.push({
+            name: item.name,
+            value: item.value,
+          });
+        });
+      }
+    }
+    loopTree(options, results); // 平铺树形结构
+    return results;
+  }
+
+  function _each_value(value, opt) {
+    var results = opt.placeholder;
+    var selecteds = _get_selecteds(value, opt.options)
+    if(selecteds instanceof Array && selecteds.length > 0) {
+      if (typeof opt.multiselect === 'boolean' && opt.multiselect) {
+        results = $.map(selecteds, function(item){
+          return '<span class="bui_combobox_tag">'+ item.name +'</span>'
+        }).join('');
+      } else {
+        results = selecteds[0].name;
+      }
+      return '<span class="bui_combobox_value">'+ results +'</span>';
+    }
+    return '<span class="bui_combobox_placeholder">'+ results +'</span>';
+  }
+  // 渲染文本框值
+
+  function _init(self, initvalue, opt) {
+    var value = _each_value(initvalue, opt);
+    if(self[0].localName === 'input'){
+      var selfClass = self.attr('class');
+      self.wrap('<div class="bui_combobox"></div>');
+      self.parent().addClass(selfClass);
+      $(value).insertBefore(self);
+      self.hide();
+      self.attr('class', '');
+      self.attr('value', opt.value);
+      self.attr('name', opt.name);
+      self.attr('disabled', opt.disabled);
+      return self.parent();
+    } else {
+      self.attr('data_value', '');
+      self.addClass('bui_combobox');
+      self.append(value+'<input value="'+ opt.value.join(',') +'" name="'+ opt.name +'" disabled="'+ opt.disabled +'" style="display: none;" />');
+      return self;
+    }
+  }
+  // 初始化多选框
+
+  function _init_popover(self, results, opt) {
+    $('.bui_combobox_popover').remove();
+    var attr = _get_position(self);
+    var leftStyle = attr.left > attr.winWidth/2 ? 'right: '+(attr.winWidth-attr.left-attr.width)+'px; ' : 'left: '+attr.left+'px; ';
+    var topStyle = attr.top > attr.winHeight / 2 ? 'bottom: '+ (attr.winHeight-attr.top)+'px; ' : 'top: '+(attr.top+attr.height)+'px; ';
+    var styles = leftStyle + topStyle;
+    var items = _render_items(opt.options, results);
+    $('body').append('<div class="bui_combobox_popover" style="'+styles+'width: '+attr.width+'px;" >'+ items +'</div>');
+    $(document).bind('click', _delete_combobox);
+    return $('.bui_combobox_popover');
+  }
+
   $.fn.combobox = function(option) {
     var initOption = {
       options: [],        // 选项
-      initValue: [],      // 初始值
+      value: [],      // 初始值
       name: '',           // 名字
+      placeholder: '请选择', // 提示语
       multiselect: false, //是否可以多选
       disabled: false,    // 是否禁用
       format: null,       // 格式化
@@ -51,65 +135,66 @@
     };
     var self = $(this);
     var opt = $.extend(initOption, option);
-    var results = opt.initValue;
-    if (self[0].localName !== 'input') {
-      if(results) {
-        self.attr('data_value', results.join(','));
-      }
-      self.append('<span></span><input value="'+ results.join(',') +'" style="display: none;" disabled="'+ opt.disabled +'" name="'+ opt.name +'" />');
-      if(opt.format instanceof Function){
-        self.find('span').html(opt.format(results));
-      }
-    } else {
-      if (!self.attr('name')) {
-        self.attr('name', opt.name);
-      }
-      if(results) {
-        self.attr('value', results.join(','));
-      }
-    }
+    var results = opt.value;
+
+    self = _init(self, results, opt);
+
     if(self.attr('disabled') || opt.disabled) {
-      if (opt.disabled) {
-        self.attr('disabled', opt.disabled);
-      }
+      self.find('input').attr('disabled', true);
       return;
     }
+
     self.on('click', function(event) {
       event.stopPropagation();
-      $('.bui_combobox').remove();
-      var attr = _get_position(self);
-      var leftStyle = attr.left > attr.winWidth/2 ? 'right:'+(attr.winWidth-attr.left-attr.width)+'px' : 'left:'+attr.left+'px;';
-      var topStyle = attr.top > attr.winHeight / 2 ? 'bottom:'+ (attr.winHeight-attr.top)+'px' : 'top:'+(attr.top+attr.height)+'px;';
-      var styles = leftStyle + topStyle;
-      var items = renderItems(opt.options);
-      $('body').append('<div class="bui_combobox" style="'+styles+'width:'+attr.width+'px;" >'+ items +'</div>');
-      $(document).bind('click', deleteCombobox);
-      $('.bui_combobox').on('click', '.bui_combobox_switch', function(ev){
+      var popover = _init_popover(self, results, opt);
+      popover.on('click', '.bui_combobox_switch', function(ev){
         ev.stopPropagation();  
         $(this).toggleClass('curr');
         $(this).parent().siblings('ul').slideToggle();
+        if($(this).hasClass('curr')){
+          $(this).find('.glyphicon').attr('class', 'glyphicon glyphicon-triangle-right');
+        } else {
+          $(this).find('.glyphicon').attr('class', 'glyphicon glyphicon-triangle-bottom');
+        }
       });
-      $('.bui_combobox').on('click', '.bui_combobox_item', function(ev){
+      // 树形开关
+
+      popover.on('click', '.bui_combobox_item', function(ev){
         ev.stopPropagation();
         var itemValue = $(this).attr('data_value');
         var itemName = $(this).attr('data_name');
-        console.log(itemValue, itemName);
+        var inputText = self.find('.bui_combobox_value');
         if (typeof opt.multiselect === 'boolean' && opt.multiselect) {
           var resIndex = $.inArray(itemValue, results);
-          if(resIndex === -1){
+          if(resIndex === -1) {
+            if(results.length === 0){
+              inputText.removeClass('placeholder');
+            }
             results.push(itemValue);
+            inputText.append('<span class="bui_combobox_tag">'+ itemName +'</span>');
             $(this).find('.bui_combobox_node').eq(0).addClass('active');
           } else {
             results.splice(resIndex, 1);
+            inputText.find('.bui_combobox_tag').eq(resIndex).remove();
+            if(results.length === 0){
+              inputText.addClass('placeholder');
+              inputText.text(opt.placeholder);
+            }
             $(this).find('.bui_combobox_node').eq(0).removeClass('active');
           }
         } else {
-          results = [itemValue];
+          var resIndex = $.inArray(itemValue, results);
+          if(resIndex === -1) {
+            results = [itemValue];
+            inputText.removeClass('placeholder');
+            inputText.text(itemName);
+          } else {
+            results.splice(resIndex, 1);
+            inputText.addClass('placeholder');
+            inputText.text(opt.placeholder);
+          }
           $(this).find('.bui_combobox_node').eq(0).addClass('active');
           $(this).siblings().find('.bui_combobox_node').eq(0).removeClass('active');
-        }
-        if(opt.format instanceof Function){
-          self.find('span').html(opt.format(results));
         }
       });
     });
